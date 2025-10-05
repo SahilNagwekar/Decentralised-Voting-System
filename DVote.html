@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Voting Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <style>
+        body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #333;
+}
+
+.container {
+    background: #fff;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    animation: fadeIn 0.6s ease-in-out;
+}
+
+h1 {
+    text-align: center;
+    font-size: 2.2rem;
+    color: #4a4a4a;
+    margin-bottom: 20px;
+}
+
+.section {
+    margin: 20px 0;
+    padding: 20px;
+    border-radius: 10px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.section:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+.admin-section { 
+    background: linear-gradient(120deg, #e3f2fd, #bbdefb); 
+}
+.voter-section { 
+    background: linear-gradient(120deg, #e8f5e9, #c8e6c9); 
+}
+.info-section { 
+    background: linear-gradient(120deg, #fff9c4, #fff59d); 
+}
+
+button {
+    background: linear-gradient(135deg, #42a5f5, #1e88e5);
+    color: white;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    margin: 5px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+button:hover {
+    background: linear-gradient(135deg, #1e88e5, #1565c0);
+    transform: scale(1.05);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+}
+button:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+input, textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+input:focus, textarea:focus {
+    border-color: #42a5f5;
+    outline: none;
+    box-shadow: 0 0 5px rgba(66,165,245,0.3);
+}
+
+.status-indicator {
+    padding: 12px;
+    border-radius: 8px;
+    margin: 12px 0;
+    font-weight: bold;
+    text-align: center;
+    color: white;
+}
+.setup { background: #fbc02d; }
+.voting { background: #29b6f6; }
+.reveal { background: #66bb6a; }
+
+.warning {
+    color: #e53935;
+    font-weight: bold;
+}
+.success {
+    color: #388e3c;
+    font-weight: bold;
+}
+
+#transactionLog {
+    background: #fafafa;
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 13px;
+}
+
+/* Smooth fade-in animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+/* Dark Mode Styles */
+body.dark-mode {
+    background: linear-gradient(135deg, #1e1e2f, #121212);
+    color: #e0e0e0;
+}
+
+body.dark-mode .container {
+    background: #1e1e2f;
+    color: #e0e0e0;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+}
+
+body.dark-mode .section {
+    background: #2a2a3d !important;
+    color: #e0e0e0;
+}
+
+body.dark-mode input,
+body.dark-mode textarea {
+    background: #2c2c3c;
+    border: 2px solid #444;
+    color: #f1f1f1;
+}
+
+body.dark-mode input:focus,
+body.dark-mode textarea:focus {
+    border-color: #90caf9;
+    box-shadow: 0 0 5px rgba(144,202,249,0.4);
+}
+
+body.dark-mode button {
+    background: linear-gradient(135deg, #673ab7, #4527a0);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+body.dark-mode button:hover {
+    background: linear-gradient(135deg, #4527a0, #311b92);
+}
+
+body.dark-mode .status-indicator {
+    border: 1px solid #555;
+}
+
+body.dark-mode #transactionLog {
+    background: #2a2a3d;
+    color: #bdbdbd;
+}
+/* Title Colors */
+.title {
+    color: #333; /* Light mode color */
+    transition: color 0.5s ease;
+}
+
+body.dark-mode .title {
+    color: #ffffff; /* Dark mode color */
+}
+button.reset-button {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24) !important;
+}
+button.reset-button:hover {
+    background: linear-gradient(135deg, #ff5252, #d63031) !important;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+      <button id="darkModeToggle" style="float:right; margin:10px;">🌙 Dark Mode</button>
+        <h1 class="title">Blockchain Voting Platform</h1>
+        <div class="section info-section">
+            <h3>Connection Status</h3>
+            <div id="connectionStatus">Not connected</div>
+            <button onclick="connectWallet()">Connect MetaMask</button>
+            <div id="userInfo"></div>
+        </div>
+
+        <div class="section">
+            <h3>Session Information</h3>
+            <div id="sessionInfo">No active session</div>
+            <div id="phaseStatus" class="status-indicator"></div>
+        </div>
+
+        <div id="adminSection" class="section admin-section" style="display: none;">
+            <h3>Admin Controls</h3>
+            
+            <div id="setupControls">
+                <h4>Setup Phase</h4>
+                <input type="text" id="topicInput" placeholder="Enter voting topic">
+                <textarea id="optionsInput" placeholder="Enter options (one per line)"></textarea>
+                <button onclick="createSession()">Create Session</button>
+                <button onclick="startVoting()" id="startVotingBtn">Start Voting</button>
+                
+                <div>
+                    <h5>Voter Management</h5>
+                    <input type="text" id="voterAddress" placeholder="Enter voter address">
+                    <button onclick="excludeVoter()">Exclude Voter</button>
+                    <button onclick="reinstateVoter()">Reinstate Voter</button>
+                    <div id="revealControls">
+    <h4>Reveal Phase</h4>
+    <button onclick="revealResults()">Reveal Results</button>
+    <button onclick="resetSession()" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24);">
+        🗑️ Complete Election Reset
+    </button>
+    <p style="font-size: 12px; color: #666; margin-top: 5px;">
+        This will clear all votes and start a completely new election
+    </p>
+</div>
+                </div>
+            </div>
+
+            <div id="votingControls">
+                <h4>Voting Phase</h4>
+                <button onclick="endVoting()">End Voting</button>
+            </div>
+
+            <div id="revealControls">
+                <button onclick="resetSession()">Reset Session</button>
+            </div>
+        </div>
+
+        <div id="voterSection" class="section voter-section" style="display: none;">
+            <h3>Voter Controls</h3>
+            <div id="votingOptions"></div>
+            <div id="voterStatus"></div>
+            <div id="resultsDisplay" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h3>Transaction Log</h3>
+            <div id="transactionLog" style="height: 100px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px;"></div>
+        </div>
+    </div>
+
+    <script>
+        let web3;
+        let contract;
+        let userAccount;
+        let isAdmin = false;
+
+        // Contract ABI - Replace with your actual ABI after compilation
+        const contractABI = [
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "_optionIndex", "type": "uint256" }
+    ],
+    "name": "castVote",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "_topic", "type": "string" },
+      { "internalType": "string[]", "name": "_options", "type": "string[]" }
+    ],
+    "name": "createSession",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  { "inputs": [], "name": "endVoting", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+  {
+    "inputs": [{ "internalType": "address", "name": "_voter", "type": "address" }],
+    "name": "excludeVoter",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_voter", "type": "address" }],
+    "name": "reinstateVoter",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  { "inputs": [], "name": "resetSession", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+  { "inputs": [], "name": "revealResults", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+  { "inputs": [], "stateMutability": "nonpayable", "type": "constructor" },
+  {
+    "anonymous": false,
+    "inputs": [{ "indexed": false, "internalType": "uint256[]", "name": "votes", "type": "uint256[]" }],
+    "name": "ResultsRevealed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": false, "internalType": "string", "name": "topic", "type": "string" },
+      { "indexed": false, "internalType": "string[]", "name": "options", "type": "string[]" }
+    ],
+    "name": "SessionCreated",
+    "type": "event"
+  },
+  { "inputs": [], "name": "startVoting", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": false, "internalType": "address", "name": "voter", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "optionIndex", "type": "uint256" }
+    ],
+    "name": "VoteCast",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [{ "indexed": false, "internalType": "address", "name": "voter", "type": "address" }],
+    "name": "VoterExcluded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [{ "indexed": false, "internalType": "address", "name": "voter", "type": "address" }],
+    "name": "VoterReinstated",
+    "type": "event"
+  },
+  { "anonymous": false, "inputs": [], "name": "VotingEnded", "type": "event" },
+  {
+    "inputs": [],
+    "name": "admin",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "currentPhase",
+    "outputs": [{ "internalType": "enum DecisionVotingPlatform.Phase", "name": "", "type": "uint8" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "currentSession",
+    "outputs": [
+      { "internalType": "string", "name": "topic", "type": "string" },
+      { "internalType": "bool", "name": "isActive", "type": "bool" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getOptions",
+    "outputs": [{ "internalType": "string[]", "name": "", "type": "string[]" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getSessionStatus",
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTopic",
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }],
+    "name": "getUserVote",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getVotes",
+    "outputs": [{ "internalType": "uint256[]", "name": "", "type": "uint256[]" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getWinningOptions",
+    "outputs": [{ "internalType": "uint256[]", "name": "", "type": "uint256[]" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }],
+    "name": "hasUserVoted",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }],
+    "name": "isVoterExcluded",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];      
+        const contractAddress = "0xee8f877604415985fd161e4bdc881019559ec99b"; 
+
+        // Network mapping
+        const networkMap = {
+            1: "Mainnet",
+            3: "Ropsten",
+            4: "Rinkeby",
+            5: "Goerli",
+            42: "Kovan",
+            11155111: "Sepolia"
+        };
+
+        // Initialize Web3
+        async function initWeb3() {
+            if (window.ethereum) {
+                web3 = new Web3(window.ethereum);
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    return true;
+                } catch (error) {
+                    console.error("User denied account access");
+                    return false;
+                }
+            } else if (window.web3) {
+                web3 = new Web3(window.web3.currentProvider);
+                return true;
+            } else {
+                alert('Please install MetaMask!');
+                return false;
+            }
+        }
+
+        // Connect wallet
+        async function connectWallet() {
+            if (!await initWeb3()) return;
+
+            try {
+                const accounts = await web3.eth.getAccounts();
+                userAccount = accounts[0];
+                
+                document.getElementById('connectionStatus').innerHTML = 
+                    `<span class="success">Connected: ${userAccount}</span>`;
+                
+                // Initialize contract
+                contract = new web3.eth.Contract(contractABI, contractAddress);
+                
+                // Load user info
+                await loadUserInfo();
+                await loadSessionInfo();
+                
+                // Set up event listeners
+                setupEventListeners();
+                
+            } catch (error) {
+                logTransaction(`Connection error: ${error.message}`);
+            }
+        }
+
+        // Load user information
+        async function loadUserInfo() {
+            if (!userAccount) return;
+
+            try {
+                const balance = await web3.eth.getBalance(userAccount);
+                const chainId = await web3.eth.getChainId();
+                const network = networkMap[chainId] || `Unknown (${chainId})`;
+                
+                document.getElementById('userInfo').innerHTML = `
+                    <p>Balance: ${web3.utils.fromWei(balance, 'ether')} ETH</p>
+                    <p>Network: ${network}</p>
+                    <p>Address: ${userAccount}</p>
+                `;
+
+                // Check if user is admin
+                const adminAddress = await contract.methods.admin().call();
+                isAdmin = (userAccount.toLowerCase() === adminAddress.toLowerCase());
+                
+                document.getElementById('adminSection').style.display = isAdmin ? 'block' : 'none';
+                document.getElementById('voterSection').style.display = 'block';
+
+            } catch (error) {
+                logTransaction(`Error loading user info: ${error.message}`);
+            }
+        }
+
+        // Load session information
+        async function loadSessionInfo() {
+            if (!contract) return;
+
+            try {
+                const topic = await contract.methods.getTopic().call();
+                const options = await contract.methods.getOptions().call();
+                const status = await contract.methods.getSessionStatus().call();
+                const isExcluded = await contract.methods.isVoterExcluded(userAccount).call();
+                const hasVoted = await contract.methods.hasUserVoted(userAccount).call();
+
+                // Update phase status
+                const phaseElement = document.getElementById('phaseStatus');
+                phaseElement.textContent = `Current Phase: ${status}`;
+                phaseElement.className = `status-indicator ${status.toLowerCase()}`;
+
+                // Update session info
+                let sessionInfo = `<p><strong>Topic:</strong> ${topic || 'Not set'}</p>`;
+                
+                if (options && options.length > 0) {
+                    sessionInfo += `<p><strong>Options:</strong></p><ul>`;
+                    options.forEach(option => {
+                        sessionInfo += `<li>${option}</li>`;
+                    });
+                    sessionInfo += `</ul>`;
+                }
+
+                document.getElementById('sessionInfo').innerHTML = sessionInfo;
+
+                // Update voter section
+                updateVoterSection(options, status, isExcluded, hasVoted);
+                updateAdminControls(status);
+
+            } catch (error) {
+                logTransaction(`Error loading session: ${error.message}`);
+            }
+            
+        }
+
+        // Update voter section
+        function updateVoterSection(options, status, isExcluded, hasVoted) {
+            const votingOptionsDiv = document.getElementById('votingOptions');
+            const voterStatusDiv = document.getElementById('voterStatus');
+            const resultsDiv = document.getElementById('resultsDisplay');
+
+            votingOptionsDiv.innerHTML = '';
+            voterStatusDiv.innerHTML = '';
+            resultsDiv.style.display = 'none';
+
+            let warning = '';
+
+            if (status === 'Voting') {
+                if (isExcluded) {
+                    warning = '<span class="warning">You are excluded from voting</span>';
+                } else if (hasVoted) {
+                    warning = '<span class="warning">You have already voted</span>';
+                } else if (isAdmin) {
+                    warning = '<span class="warning">Admin cannot vote</span>';
+                } else {
+                    // Show voting options
+                    if (options && options.length > 0) {
+                        options.forEach((option, index) => {
+                            const button = document.createElement('button');
+                            button.textContent = option;
+                            button.onclick = () => castVote(index);
+                            votingOptionsDiv.appendChild(button);
+                        });
+                    }
+                }
+            } else if (status === 'Reveal') {
+                loadResults();
+            }
+
+            voterStatusDiv.innerHTML = warning;
+        }
+
+        // Update admin controls based on phase
+        function updateAdminControls(status) {
+            const setupControls = document.getElementById('setupControls');
+            const votingControls = document.getElementById('votingControls');
+            const revealControls = document.getElementById('revealControls');
+
+            setupControls.style.display = status === 'Setup' ? 'block' : 'none';
+            votingControls.style.display = status === 'Voting' ? 'block' : 'none';
+            revealControls.style.display = status === 'Reveal' ? 'block' : 'none';
+        }
+
+        // Admin functions
+        async function createSession() {
+            const topic = document.getElementById('topicInput').value;
+            const optionsText = document.getElementById('optionsInput').value;
+            const options = optionsText.split('\n').filter(opt => opt.trim() !== '');
+
+            if (!topic || options.length < 2) {
+                alert('Please enter a topic and at least 2 options');
+                return;
+            }
+
+            try {
+                await contract.methods.createSession(topic, options).send({ from: userAccount });
+                logTransaction('Session created successfully');
+                await loadSessionInfo();
+            } catch (error) {
+                logTransaction(`Error creating session: ${error.message}`);
+            }
+        }
+
+        async function startVoting() {
+            try {
+                await contract.methods.startVoting().send({ from: userAccount });
+                logTransaction('Voting started');
+                await loadSessionInfo();
+            } catch (error) {
+                logTransaction(`Error starting voting: ${error.message}`);
+            }
+        }
+
+        async function excludeVoter() {
+            const voterAddress = document.getElementById('voterAddress').value;
+            if (!voterAddress) {
+                alert('Please enter a voter address');
+                return;
+            }
+
+            try {
+                await contract.methods.excludeVoter(voterAddress).send({ from: userAccount });
+                logTransaction(`Voter ${voterAddress} excluded`);
+            } catch (error) {
+                logTransaction(`Error excluding voter: ${error.message}`);
+            }
+        }
+
+        async function reinstateVoter() {
+            const voterAddress = document.getElementById('voterAddress').value;
+            if (!voterAddress) {
+                alert('Please enter a voter address');
+                return;
+            }
+
+            try {
+                await contract.methods.reinstateVoter(voterAddress).send({ from: userAccount });
+                logTransaction(`Voter ${voterAddress} reinstated`);
+            } catch (error) {
+                logTransaction(`Error reinstating voter: ${error.message}`);
+            }
+        }
+
+        async function endVoting() {
+            try {
+                await contract.methods.endVoting().send({ from: userAccount });
+                logTransaction('Voting ended');
+                await loadSessionInfo();
+            } catch (error) {
+                logTransaction(`Error ending voting: ${error.message}`);
+            }
+        }
+
+        async function resetSession() {
+            try {
+                await contract.methods.resetSession().send({ from: userAccount });
+                logTransaction('Session reset');
+                await loadSessionInfo();
+            } catch (error) {
+                logTransaction(`Error resetting session: ${error.message}`);
+            }
+        }
+
+        // Voter functions
+        async function castVote(optionIndex) {
+            try {
+                await contract.methods.castVote(optionIndex).send({ from: userAccount });
+                logTransaction(`Vote cast for option ${optionIndex}`);
+                await loadSessionInfo();
+            } catch (error) {
+                logTransaction(`Error casting vote: ${error.message}`);
+            }
+        }
+
+        // Load and display results
+        async function loadResults() {
+            try {
+                const votes = await contract.methods.getVotes().call();
+                const options = await contract.methods.getOptions().call();
+                const winningIndices = await contract.methods.getWinningOptions().call();
+
+                let resultsHTML = '<h4>Results:</h4><ul>';
+                options.forEach((option, index) => {
+                    resultsHTML += `<li>${option}: ${votes[index]} votes</li>`;
+                });
+                resultsHTML += '</ul>';
+
+                if (winningIndices.length > 0) {
+                    resultsHTML += '<h4>Winning Option(s):</h4><ul>';
+                    winningIndices.forEach(index => {
+                        resultsHTML += `<li>${options[index]}</li>`;
+                    });
+                    resultsHTML += '</ul>';
+                }
+
+                document.getElementById('resultsDisplay').innerHTML = resultsHTML;
+                document.getElementById('resultsDisplay').style.display = 'block';
+
+            } catch (error) {
+                logTransaction(`Error loading results: ${error.message}`);
+            }
+        }
+
+        // Event listeners
+        function setupEventListeners() {
+            contract.events.VoteCast({}, (error, event) => {
+                if (!error) {
+                    logTransaction(`Vote cast by ${event.returnValues.voter}`);
+                }
+            });
+
+            contract.events.VotingEnded({}, (error, event) => {
+                if (!error) {
+                    logTransaction('Voting phase ended');
+                    loadSessionInfo();
+                }
+            });
+
+            contract.events.ResultsRevealed({}, (error, event) => {
+                if (!error) {
+                    logTransaction('Results revealed');
+                    loadResults();
+                }
+            });
+        }
+
+        // Utility function
+        function logTransaction(message) {
+            const log = document.getElementById('transactionLog');
+            const timestamp = new Date().toLocaleTimeString();
+            log.innerHTML += `[${timestamp}] ${message}<br>`;
+            log.scrollTop = log.scrollHeight;
+        }
+// Auto-refresh when MetaMask account changes
+if (window.ethereum) {
+    window.ethereum.on("accountsChanged", async (accounts) => {
+        if (accounts.length > 0) {
+            userAccount = accounts[0];
+            document.getElementById('connectionStatus').innerHTML = 
+                `<span class="success">Connected: ${userAccount}</span>`;
+            
+            await loadUserInfo();
+            await loadSessionInfo();
+        } else {
+            document.getElementById('connectionStatus').innerHTML = "Not connected";
+            userAccount = null;
+        }
+    });
+}
+// Dark Mode Toggle
+const darkModeToggle = document.getElementById("darkModeToggle");
+
+// Load saved preference
+if (localStorage.getItem("darkMode") === "enabled") {
+    document.body.classList.add("dark-mode");
+    darkModeToggle.textContent = "☀️ Light Mode";
+}
+
+darkModeToggle.addEventListener("click", () => {
+    document.body.classList.toggle("dark-mode");
+
+    if (document.body.classList.contains("dark-mode")) {
+        localStorage.setItem("darkMode", "enabled");
+        darkModeToggle.textContent = "☀️ Light Mode";
+    } else {
+        localStorage.setItem("darkMode", "disabled");
+        darkModeToggle.textContent = "🌙 Dark Mode";
+    }
+});
+async function resetSession() {
+    const confirmed = confirm('⚠️ WARNING: This will completely reset the election and clear ALL votes. This action cannot be undone. Continue?');
+    
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        await contract.methods.resetSession().send({ from: userAccount });
+        logTransaction('Session reset - starting fresh election');
+        
+        // Clear all local form data
+        document.getElementById('topicInput').value = '';
+        document.getElementById('optionsInput').value = '';
+        document.getElementById('voterAddress').value = '';
+        
+        // Force refresh
+        await loadSessionInfo();
+        
+        // Show success message
+        alert('✅ Election has been completely reset! You can now create a new voting session.');
+        
+    } catch (error) {
+        logTransaction(`Error resetting session: ${error.message}`);
+        alert('Error resetting session: ' + error.message);
+    }
+}
+        // Initialize on load
+        window.onload = connectWallet;
+    </script>
+</body>
+</html>
